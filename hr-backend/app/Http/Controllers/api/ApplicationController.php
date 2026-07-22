@@ -11,16 +11,18 @@ use Illuminate\Http\Request;
 
 class ApplicationController extends Controller
 {
-    //
     public function index(Request $request)
     {
-        $role = $request->user()->role?->name;
+        $role = strtolower($request->user()->role?->name ?? '');
 
         if ($role !== 'hr admin') {
             return response()->json([
-                'message' => 'Akses ditolak!.'
+                'success'     => false,
+                'status_code' => 403,
+                'message'     => 'Akses ditolak! Anda tidak memiliki akses ke halaman ini.'
             ], 403);
         }
+
         $query = Application::query()->with(['candidate', 'jobList']);
 
         // search
@@ -40,11 +42,9 @@ class ApplicationController extends Controller
             });
         }
 
-
         // sort
         $sortBy = $request->query('sort_by', 'created_at');
         $sortDir = strtolower($request->query('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
-
 
         // whitelist kolom yg bisa di sort
         $allowedSorts = ['full_name', 'email', 'title', 'apply_date', 'created_at'];
@@ -79,11 +79,13 @@ class ApplicationController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        $role = $user->role?->name;
+        $role = strtolower($user->role?->name ?? '');
 
-        if ($role !== 'Candidate') {
+        if ($role !== 'candidate') {
             return response()->json([
-                'message' => 'Hanya pelamar/candidate yang dapat melamar pekerjaan.'
+                'success'     => false,
+                'status_code' => 403,
+                'message'     => 'Akses ditolak'
             ], 403);
         }
 
@@ -92,11 +94,13 @@ class ApplicationController extends Controller
 
         if (!$candidate) {
             return response()->json([
-                'message' => 'Profil kandidat Anda belum terdaftar.'
+                'success'     => false,
+                'status_code' => 404,
+                'message'     => 'Profil kandidat Anda belum terdaftar.'
             ], 404);
         }
 
-        //  Validasi Job List
+        // Validasi Job List
         $validated = $request->validate([
             'job_list_id' => 'required|exists:job_lists,id',
         ]);
@@ -108,20 +112,21 @@ class ApplicationController extends Controller
 
         if ($exists) {
             return response()->json([
-                'message' => 'Anda sudah melamar pekerjaan ini.'
+                'success'     => false,
+                'status_code' => 409,
+                'message'     => 'Anda sudah melamar pekerjaan ini.'
             ], 409);
         }
 
         $appData = Application::create([
             'candidate_id' => $candidate->id,
-            'job_list_id' => $validated['job_list_id'],
-            'apply_date' => now(),
-            'status' => 'applied',
+            'job_list_id'  => $validated['job_list_id'],
+            'apply_date'   => now(),
+            'status'       => 'applied',
         ]);
 
         $appData->load(['candidate', 'jobList']);
 
         return new ApplicationResource($appData);
     }
-
 }

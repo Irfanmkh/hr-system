@@ -17,9 +17,13 @@ class DashboardController extends Controller
         $role = $request->user()->role?->name;
 
         if ($role === 'candidate') {
+
             return response()->json([
-                'message' => 'Akses ditolak!.'
-            ], 403);
+                           'success'     => false,
+                           'status_code' => 403,
+                           'message'     => 'Akses ditolak! '
+                       ], 403);
+
         }
         $totalCandidates = Candidate::count();
         $totalJobs = JobList::count();

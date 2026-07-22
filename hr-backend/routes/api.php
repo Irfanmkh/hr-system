@@ -20,7 +20,11 @@ Route::get('/jobs', [JobListController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::middleware('role:hr admin,hr staff')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index']);
+
+    });
+
 
     Route::post('/jobs', [JobListController::class, 'store']);
     Route::put('/jobs/{id}', [JobListController::class, 'update']);
@@ -34,5 +38,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/applications', [ApplicationController::class, 'index']);
     Route::post('/applications', [ApplicationController::class, 'store']);
 });
-
-

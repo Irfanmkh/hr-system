@@ -9,21 +9,17 @@ use App\Models\JobList;
 
 class JobListController extends Controller
 {
-    //
     public function index(Request $request)
     {
         $query = JobList::query();
 
         // search
-
         if ($request->filled('search')) {
             $search = strtolower(trim($request->search));
             $query->where(function ($q) use ($search) {
-                $q->whereRaw('LOWER(title) LIKE ?', ["%{$search}%"])
-                    ->orWhereRaw('LOWER(department) LIKE ?', ["%{$search}%"]);
-
+                $q->whereRaw('title ILIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('department ILIKE ?', ["%{$search}%"]);
             });
-
         }
 
         // filter status (is_active)
@@ -49,23 +45,26 @@ class JobListController extends Controller
         $perPage = $request->integer('per_page', 10);
         $jobs = $query->paginate($perPage);
 
-
         return JobListResource::collection($jobs);
     }
 
     public function store(Request $request)
     {
-        $role = $request->user()->role?->name;
+        $role = strtolower($request->user()->role?->name ?? '');
+
         if (!in_array($role, ['hr admin', 'hr staff'])) {
             return response()->json([
-                'message' => 'Akses ditolak.'
+                'success'     => false,
+                'status_code' => 403,
+                'message'     => 'Akses ditolak! '
             ], 403);
         }
+
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'department' => 'required|string|max:255',
+            'title'       => 'required|string|max:255',
+            'department'  => 'required|string|max:255',
             'description' => 'nullable|string',
-            'is_active' => 'boolean',
+            'is_active'   => 'boolean',
         ]);
 
         $job = JobList::create($validated);
@@ -73,46 +72,68 @@ class JobListController extends Controller
         return new JobListResource($job);
     }
 
-
-
     public function update(Request $request, $id)
     {
-        $role = $request->user()->role?->name;
+        $role = strtolower($request->user()->role?->name ?? '');
+
         if (!in_array($role, ['hr admin', 'hr staff'])) {
             return response()->json([
-                'message' => 'Akses ditolak.'
+                'success'     => false,
+                'status_code' => 403,
+                'message'     => 'Akses ditolak! '
             ], 403);
         }
 
-        $joblist = JobList::findOrFail($id);
+        $joblist = JobList::find($id);
+
+        if (!$joblist) {
+            return response()->json([
+                'success'     => false,
+                'status_code' => 404,
+                'message'     => 'Data lowongan kerja tidak ditemukan.'
+            ], 404);
+        }
 
         $validated = $request->validate([
-            'title' => 'sometimes|required|string',
-            'department' => 'sometimes|required|string',
+            'title'       => 'sometimes|required|string',
+            'department'  => 'sometimes|required|string',
             'description' => 'nullable|string',
-            'is_active' => 'boolean'
+            'is_active'   => 'boolean'
         ]);
 
         $joblist->update($validated);
 
         return new JobListResource($joblist);
-
     }
-
 
     public function destroy(Request $request, $id)
     {
-        $role = $request->user()->role?->name;
+        $role = strtolower($request->user()->role?->name ?? '');
+
         if (!in_array($role, ['hr admin', 'hr staff'])) {
             return response()->json([
-                'message' => 'Akses ditolak.'
+                'success'     => false,
+                'status_code' => 403,
+                'message'     => 'Akses ditolak! '
             ], 403);
         }
-        $joblist = JobList::findOrFail($id);
+
+        $joblist = JobList::find($id);
+
+        if (!$joblist) {
+            return response()->json([
+                'success'     => false,
+                'status_code' => 404,
+                'message'     => 'Data lowongan kerja tidak ditemukan.'
+            ], 404);
+        }
 
         $joblist->delete();
+
         return response()->json([
-            'message' => 'lowongan kerja berhasil dihapus!'
+            'success'     => true,
+            'status_code' => 200,
+            'message'     => 'Lowongan kerja berhasil dihapus!'
         ], 200);
     }
 }
