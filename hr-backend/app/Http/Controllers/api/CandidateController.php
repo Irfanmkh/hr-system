@@ -12,36 +12,48 @@ class CandidateController extends Controller
     //
     public function index(Request $request)
     {
+
+        $role = $request->user()->role?->name;
+
+        if ($role === 'candidate') {
+            return response()->json([
+                'message' => 'Akses ditolak!.'
+            ], 403);
+        }
         $query = Candidate::query();
 
         // search
-
         if ($request->filled('search')) {
             $search = strtolower(trim($request->search));
             $query->where(function ($q) use ($search) {
-                $q->whereRaw('name ILIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('email ILIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('phone ILIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('address ILIKE ?', ["%{$search}%"]);
+                $q->whereRaw('full_name ILIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('email ILIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('phone ILIKE ?', ["%{$search}%"])
+                    ->orWhereRaw('address ILIKE ?', ["%{$search}%"]);
 
             });
 
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
         }
 
         // sort
         $sortBy = $request->query('sort_by', 'created_at');
         $sortDir = strtolower($request->query('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
-        // validasi sql inject
-        $allowedSorts = ['name', 'email', 'phone', 'address', 'created_at'];
+        // whitelist kolom yg bisa di sort
+        $allowedSorts = ['full_name', 'email', 'phone', 'address', 'created_at'];
+        // Cek  yang di req user ada di dalam whitelist
         if (in_array($sortBy, $allowedSorts)) {
             $query->orderBy($sortBy, $sortDir);
         } else {
+            // Jika tidak ada, balik ke default sorting
             $query->latest();
         }
 
         // paginasi
-        $perPage = $request->get('per_page', 10);
+        $perPage = $request->integer('per_page', 10);
 
         $candidates = $query->paginate($perPage);
 
@@ -51,37 +63,52 @@ class CandidateController extends Controller
 
     public function store(Request $request)
     {
+        $role = $request->user()->role?->name;
+        // cek role
+        if (!in_array($role, ['hr admin', 'hr staff'])) {
+            return response()->json([
+                'message' => 'Akses ditolak.'
+            ], 403);
+        }
 
-        $user = $request->user();
+        // validasi input
         $validated = $request->validate([
-            'full_name'       => 'required|string|max:255',
-            'phone' => 'required|string',
-            'address'   => 'required|string',
-            'birth_date'   => 'date',
+            'full_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:candidates,email',
+            'phone' => 'required|string|max:20',
+            'address' => 'required|string',
+            'birth_date' => 'required|date',
         ]);
 
-        $candidateData = array_merge($validated, [
-            'user_id' => $user->id,
-            'email' => $user->email,
 
-            'status' => 'applied',
-        ]);
-
-        $candidate = Candidate::create($candidateData);
-
+        $candidate = Candidate::create($validated);
         return new CandidateResource($candidate);
     }
 
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $candidate = Candidate::findOrFail($id);
+        $user = $request->user();
+        $role = $user->role?->name;
 
+        $candidate = Candidate::findOrFail($id);
+        if ($role === 'candidate' && $candidate->user_id !== $user->id) {
+            return response()->json([
+                'message' => 'Akses ditolak!.'
+            ], 403);
+        }
         return new CandidateResource($candidate);
     }
 
     public function update(Request $request, $id)
     {
+        $role = $request->user()->role?->name;
+
+        if (!in_array($role, ['hr admin', 'hr staff'])) {
+            return response()->json([
+                'message' => 'Akses ditolak.'
+            ], 403);
+        }
 
         $candidateData = Candidate::findOrFail($id);
 
@@ -90,7 +117,7 @@ class CandidateController extends Controller
             'phone' => 'required|string',
             'address' => 'required|string',
             'birth_date' => 'required|date',
-            'email' => 'required|email'
+            'email' => 'required|email|unique:candidates,email,' . $candidateData->id,
         ]);
 
         $candidateData->update($validated);
@@ -100,8 +127,14 @@ class CandidateController extends Controller
     }
 
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $role = $request->user()->role?->name;
+        if (!in_array($role, ['hr admin', 'hr staff'])) {
+            return response()->json([
+                'message' => 'Akses ditolak.'
+            ], 403);
+        }
         $candidateData = Candidate::findOrFail($id);
 
         $candidateData->delete();

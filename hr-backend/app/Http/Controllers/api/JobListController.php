@@ -20,7 +20,7 @@ class JobListController extends Controller
             $search = strtolower(trim($request->search));
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(title) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(department) LIKE ?', ["%{$search}%"]);
+                    ->orWhereRaw('LOWER(department) LIKE ?', ["%{$search}%"]);
 
             });
 
@@ -36,8 +36,9 @@ class JobListController extends Controller
         $sortBy = $request->query('sort_by', 'created_at');
         $sortDir = strtolower($request->query('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
-        // validasi sql inject
+        // whitelist kolom yg bisa di sort (mencegah sql injection)
         $allowedSorts = ['title', 'department', 'is_active', 'created_at'];
+
         if (in_array($sortBy, $allowedSorts)) {
             $query->orderBy($sortBy, $sortDir);
         } else {
@@ -45,8 +46,7 @@ class JobListController extends Controller
         }
 
         // paginasi
-        $perPage = $request->get('per_page', 10);
-
+        $perPage = $request->integer('per_page', 10);
         $jobs = $query->paginate($perPage);
 
 
@@ -55,11 +55,17 @@ class JobListController extends Controller
 
     public function store(Request $request)
     {
+        $role = $request->user()->role?->name;
+        if (!in_array($role, ['hr admin', 'hr staff'])) {
+            return response()->json([
+                'message' => 'Akses ditolak.'
+            ], 403);
+        }
         $validated = $request->validate([
-            'title'       => 'required|string|max:255',
-            'department'  => 'required|string|max:255',
+            'title' => 'required|string|max:255',
+            'department' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'is_active'   => 'boolean',
+            'is_active' => 'boolean',
         ]);
 
         $job = JobList::create($validated);
@@ -71,6 +77,12 @@ class JobListController extends Controller
 
     public function update(Request $request, $id)
     {
+        $role = $request->user()->role?->name;
+        if (!in_array($role, ['hr admin', 'hr staff'])) {
+            return response()->json([
+                'message' => 'Akses ditolak.'
+            ], 403);
+        }
 
         $joblist = JobList::findOrFail($id);
 
@@ -88,8 +100,14 @@ class JobListController extends Controller
     }
 
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $role = $request->user()->role?->name;
+        if (!in_array($role, ['hr admin', 'hr staff'])) {
+            return response()->json([
+                'message' => 'Akses ditolak.'
+            ], 403);
+        }
         $joblist = JobList::findOrFail($id);
 
         $joblist->delete();

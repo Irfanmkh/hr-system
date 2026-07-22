@@ -12,13 +12,12 @@ return new class extends Migration {
     {
         Schema::create('candidates', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('full_name');
             $table->string('email');
             $table->string('phone');
             $table->string('address');
             $table->date('birth_date');
-            $table->string('status');
+            $table->string('status')->default('applied');
             $table->timestamps();
         });
     }
