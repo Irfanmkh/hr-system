@@ -1,6 +1,10 @@
 <script setup lang="ts">
 const config = useRuntimeConfig();
 const { token } = useAuth();
+definePageMeta({
+  layout: "default",
+  middleware: "auth",
+});
 
 // Query Params
 const search = ref("");
@@ -55,7 +59,21 @@ onMounted(() => {
 
 <template>
   <div class="p-4 md:p-6 max-w-7xl mx-auto space-y-4">
-    <h1 class="text-2xl font-bold">Daftar Kandidat</h1>
+    <div class="border-b border-gray-100 pb-4">
+      <h1 class="font-headline text-3xl font-bold text-primary">
+        Daftar Kandidat
+      </h1>
+    </div>
+
+    <!-- State Loading -->
+    <div v-if="loading" class="flex items-center justify-center py-12">
+      <div class="text-center space-y-2">
+        <div
+          class="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"
+        ></div>
+        <p class="text-sm text-gray-400">Memuat data kandidat...</p>
+      </div>
+    </div>
 
     <!-- Control Bar (Filter & Search) -->
     <div

@@ -2,6 +2,10 @@
 const route = useRoute();
 const config = useRuntimeConfig();
 const { token } = useAuth();
+definePageMeta({
+  layout: "default",
+  middleware: "auth",
+});
 
 const candidate = ref<any>(null);
 const loading = ref(true);

@@ -10,6 +10,7 @@ import {
   LinearScale,
 } from "chart.js";
 
+const { user } = useAuth();
 // Register Chart.js
 ChartJS.register(
   Title,
@@ -104,11 +105,8 @@ onMounted(() => {
     <!-- Header Section -->
     <div class="border-b border-gray-100 pb-4">
       <h1 class="font-headline text-3xl font-bold text-primary">
-        Dashboard Overview
+        {{ user?.role === "candidate" ? "Data Diri" : "Dashboard" }}
       </h1>
-      <p class="text-sm text-gray-500 mt-1">
-        Ringkasan statistik kandidat dan lowongan kerja aktif.
-      </p>
     </div>
 
     <!-- State Loading -->

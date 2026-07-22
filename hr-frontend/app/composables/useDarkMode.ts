@@ -1,19 +1,4 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
-export default defineNuxtConfig({
-  devtools: {
-    enabled: true,
-  },
-
-  runtimeConfig: {
-    public: {
-      apiBase: "http://hr-backend.test/api",
-      backendUrl: "http://hr-backend.test",
-    },
-  },
-
-  modules: ["@nuxtjs/tailwindcss"],
-});
-
+// composables/useDarkMode.ts
 export const useDarkMode = () => {
   const isDark = useState<boolean>("isDark", () => false);
 
@@ -40,6 +25,9 @@ export const useDarkMode = () => {
       ) {
         isDark.value = true;
         document.documentElement.classList.add("dark");
+      } else {
+        isDark.value = false;
+        document.documentElement.classList.remove("dark");
       }
     }
   };
