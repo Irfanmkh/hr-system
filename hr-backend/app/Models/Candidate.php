@@ -19,6 +19,9 @@ class Candidate extends Model
         'status'
     ];
 
+    protected $casts = [
+        'birth_date' => 'date',
+    ];
     public function user()
     {
         return $this->hasOne(User::class);
