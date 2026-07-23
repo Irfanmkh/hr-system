@@ -6,10 +6,10 @@ Aplikasi Web HR System yang dibangun dengan arsitektur terpisah antara Frontend 
 
 ## Tech Stack & Arsitektur
 
-- **Frontend:** Nuxt 3 (Vue 3, Tailwind CSS, Chart.js)
+- **Frontend:** Nuxt 3 Tailwind CSS, Chart.js
 - **Backend:** Laravel (REST API, Sanctum, Form Request Validation)
 - **Database:** PostgreSQL (Supabase)
-- **Deployment:** Shared Hosting cPanel (Node.js App & PHP Laravel)
+- **Deployment:** Shared Hosting cPanel
 
 ---
 
